@@ -1,0 +1,16 @@
+/resources/public/js/compiled/**
+.DS_Store
+pom.xml
+*.jar
+/lib/cljs-runtime
+classes/
+out/
+/target/
+.lein-deps-sum
+.lein-repl-history
+.lein-plugins/
+.shadow-cljs/
+.repl
+.nrepl-*
+node_modules
+/package-lock.json

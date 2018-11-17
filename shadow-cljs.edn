@@ -1,0 +1,9 @@
+{:dependencies []
+ :lein true
+ :nrepl {:port 5555}
+ :builds {:app {:target :node-library
+                :exports {:activate html-sync.core/activate
+                          :deactivate html-sync.core/deactivate}
+                :output-to "lib/html-sync.js"
+                :devtools {:before-load html-sync.core/stop
+                           :after-load html-sync.core/start}}}}

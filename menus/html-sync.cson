@@ -1,0 +1,21 @@
+'context-menu':
+  'atom-text-editor': [
+    {
+      'label': 'Label'
+      'command': 'html-sync:start'
+    }
+  ]
+'menu': [
+  {
+    'label': 'Packages'
+    'submenu': [
+      'label': 'HTML Sync'
+      'submenu': [
+        {
+          'label': 'Label'
+          'command': 'html-sync:start'
+        }
+      ]
+    ]
+  }
+]

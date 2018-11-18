@@ -1,13 +1,12 @@
 (ns html-sync.html-editor
   (:require [clojure.string :as string]
             [cljs.nodejs :as node]
-            [html-sync.common :as common]
-            [html-sync.html-editor-view :as view]))
+            [html-sync.common :as common :refer [uri-to-state]]))
 
 (def path (node/require "path"))
 (def node-atom (node/require "atom"))
 
-(def CompositeDisposible (.-CompositeDisposible node-atom))
+(def CompositeDisposable (.-CompositeDisposable node-atom))
 (def File (.-File node-atom))
 (def Emitter (.-Emitter node-atom))
 
@@ -20,44 +19,47 @@
       (finally
         (.dispose subscriptions)))))
 
-(defn create-dom [uri])
+(defn create-dom [uri]
+  (common/console-log "Current state:" uri @uri-to-state)
+  (let [container (doto (.createElement js/document "div")
+                        (.setAttribute "className" "html-sync html-editor-view"))
+        iframe (doto (.createElement js/document "iframe")
+                     (.setAttribute "className" "html-sync")
+                     (.setAttribute "width" "100%")
+                     (.setAttribute "height" "100%"))]
+    (.appendChild container iframe)
+    (swap! uri-to-state update uri #(assoc % :iframe iframe))
+    container))
 
 (defn HTMLEditor [uri]
   (this-as this
-           (set! (.-file this) (File. uri))
-           (set! (.-subscriptions this) (CompositeDisposible.))
-           (set! (.-emitter this) (Emitter.))
-           (set! (.-element this) (.-getElement this))
-           (set! (.-view this) (view/create-view (.-element this)))
-           (set! (.-editorView this) nil)
-           (.add (.-subscriptions this)
-                 (.onDidDelete (.-file this)
-                               (fn []
-                                 (this-as this
-                                          (let [pane (.paneForURI (.-workspace js/atom) uri)]
-                                            (try
-                                              (.destroyItem pane (.itemForURI pane uri))
-                                              (catch js/Error e
-                                                (common/console-log "ERROR:" "Failed to destroy item with URI" uri))
-                                              (finally
-                                                (.dispose (.-subscriptions this)))))))))
+           (let [original-uri (subs uri (count common/protocol))]
+             (set! (.-file this) (File. original-uri))
+             (set! (.-subscriptions this) (CompositeDisposable.))
+             (set! (.-emitter this) (Emitter.))
+             (set! (.-element this) (create-dom original-uri))
+             (set! (.-view this) nil)
+             (.add (.-subscriptions this)
+                   (.onDidDelete (.-file this)
+                                 (fn []
+                                   (this-as this
+                                            (let [pane (.paneForURI (.-workspace js/atom) uri)]
+                                              (try
+                                                (.destroyItem pane (.itemForURI pane uri))
+                                                (catch js/Error e
+                                                  (common/console-log "ERROR:" "Failed to destroy item with URI" uri))
+                                                (finally
+                                                  (.dispose (.-subscriptions this))))))))))
            this))
 
 (set! (.. HTMLEditor -prototype -getElement)
       (fn []
         (this-as this
-                 (and (.-view this)
-                      (or (.-element (.-view this))
-                          (.createDom js/DOM "div"))))))
+                 (.-element this))))
 (set! (.. HTMLEditor -prototype -getView)
       (fn []
         (this-as this
-                 (when-not (.-editorView this)
-                   (try
-                     (set! (.-editorView this) (view/HTMLEditorView. this))
-                     (.-editorView this)
-                     (catch js/Error e
-                       (common/console-log "ERROR:" "Cloud not create HTMLEditorView.")))))))
+                 nil)))
 (set! (.. HTMLEditor -prototype -getAllowedLocations)
       (fn []
         (array "center")))
@@ -90,15 +92,11 @@
           (when (.-view this)
             (.destroy (.-view this)))
           (.emit (.-emitter this) "did-destroy"))))
-(set! (.. HTMLEditor -prototype -serialize)
-      (fn []
-        (this-as this
-                 (js-obj "filePath" (.-getPath this)
-                         "deserializer" (.-name (.-constructor this))))))
 (set! (.. HTMLEditor -prototype -isEqual)
       (fn [other-editor]
         (this-as this
-                 (= this other-editor))))
+                 (and true ;; check instance type
+                      (= (.getURI this) (.getURI other-editor))))))
 (set! (.. HTMLEditor -prototype -terminatePendingState)
       (fn []
         (this-as this

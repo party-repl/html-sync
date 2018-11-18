@@ -1,8 +1,8 @@
 'context-menu':
   'atom-text-editor': [
     {
-      'label': 'Label'
-      'command': 'html-sync:start'
+      'label': 'Open with HTML Sync'
+      'command': 'html-sync:open'
     }
   ]
 'menu': [
@@ -12,8 +12,8 @@
       'label': 'HTML Sync'
       'submenu': [
         {
-          'label': 'Label'
-          'command': 'html-sync:start'
+          'label': 'Open'
+          'command': 'html-sync:open'
         }
       ]
     ]

@@ -4,9 +4,8 @@
 
 (def path (node/require "path"))
 (def node-atom (node/require "atom"))
-(def etch (node/require "etch"))
 
-(def CompositeDisposible (.-CompositeDisposible node-atom))
+(def CompositeDisposable (.-CompositeDisposable node-atom))
 (def File (.-File node-atom))
 (def Emitter (.-Emitter node-atom))
 
@@ -14,8 +13,8 @@
   (this-as this
            (set! (.-editor this) editor)
            (set! (.-emitter this) (Emitter.))
-           (set! (.-disposables this) (CompositeDisposible.))
-           (.initialize etch this)
+           (set! (.-disposables this) (CompositeDisposable.))
+           (set! (.-element this) (.render this))
            this))
 
 (set! (.. HTMLEditorView -prototype -onDidLoad)
@@ -28,8 +27,7 @@
       (fn []
         (this-as this
                  (.dispose (.-disposables this))
-                 (.dispose (.-emitter this))
-                 (.destroy etch this))))
+                 (.dispose (.-emitter this)))))
 (set! (.. HTMLEditorView -prototype -render)
       (fn []
         "<div className=\"html-sync html-editor-view\">

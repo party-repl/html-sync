@@ -1,0 +1,91 @@
+<html>
+    <meta charset="utf-8">
+    <head>
+        <style type="text/css">
+            body{
+                background: rgb(255, 255, 255);
+            }
+
+            h2{
+                color: rgb(80, 80, 80);
+            }
+
+            #container{
+				margin: 50px auto;
+				padding: 0px;
+				width: 320px;
+			}
+
+            form{
+				padding: 20px;
+				width: 320px;
+			}
+
+			.item{
+				margin: 20px auto;
+				width: 250px;
+			}
+
+			label{
+				text-align: right;
+				width: 80px;
+                color: rgb(125, 125, 125);
+			}
+
+            input{
+                display: block;
+
+                padding: 0px 5px;
+
+                width: 240px;
+                height: 30px;
+
+                font-size: 14px;
+
+                border: 2px solid rgb(209, 218, 221);
+                border-radius: 5px;
+            }
+
+            input::selection{
+                background: rgb(135, 220, 225);
+            }
+
+
+            input:focus{
+                border: 2px solid rgb(0, 188, 203);
+                outline: none;
+            }
+
+            #login{
+                margin: 20px auto;
+                padding: 12px;
+                background: rgb(255, 130, 117);
+                color: rgb(255, 255, 255);
+                width: 80px;
+                height: 40px;
+                float: right;
+                font-size: 14px;
+                text-align: center;
+                border: none;
+                border-radius: 5px;
+                cursor:pointer;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="container">
+            <h2 id="title">Login to MyAccont</h2>
+			<form>
+				<div class="item">
+					<label>Email:</label>
+					<input id="email" type="email">
+				</div>
+				<div class="item">
+					<label>Password:</label>
+					<input id="password" type="password">
+				</div>
+				<button id="login">Login</button>
+			</form>
+		</div>
+    </body>
+</html>

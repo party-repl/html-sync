@@ -1,8 +1,9 @@
 (ns html-sync.core
   (:require [clojure.string :as string]
             [cljs.nodejs :as node]
-            [html-sync.common :as common :refer [uri-to-state]]
-            [html-sync.html-editor :as html-editor]))
+            [html-sync.common :as common :refer [uri-to-state disposables]]
+            [html-sync.html-editor :as html-editor]
+            [html-sync.hidden-state :as hidden-state]))
 
 (def path (node/require "path"))
 (def node-atom (node/require "atom"))
@@ -10,7 +11,6 @@
 (def CompositeDisposable (.-CompositeDisposable node-atom))
 (def commands (.-commands js/atom))
 
-(def disposables (CompositeDisposable.))
 (def html-extension ".html")
 
 ;; Takes the uri that contains the original path of the text editor
@@ -20,6 +20,7 @@
 
 (defn update-iframe-content [iframe new-content]
   (common/console-log "Applying IFrame content")
+  (hidden-state/update-hidden-state :change-count (inc (get (hidden-state/get-hidden-state :change-count) 0)))
   (.. iframe -contentWindow -document (open))
   (.. iframe -contentWindow -document (write new-content))
   (.. iframe -contentWindow -document (close)))
@@ -49,10 +50,12 @@
 
 (defn activate []
   (common/console-log "Activating HTML Sync!")
+  (hidden-state/create-hidden-state)
   (.add disposables (.addOpener (.-workspace js/atom) open-URI))
   (.add disposables (.add commands "atom-workspace" (str common/package-name ":open") open)))
 
 (defn deactivate []
+  (hidden-state/destroy-hidden-pane)
   (.dispose disposables)
   (reset! common/uri-to-state {}))
 

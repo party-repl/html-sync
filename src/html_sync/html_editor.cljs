@@ -1,7 +1,8 @@
 (ns html-sync.html-editor
   (:require [clojure.string :as string]
             [cljs.nodejs :as node]
-            [html-sync.common :as common :refer [uri-to-state]]))
+            [html-sync.common :as common :refer [uri-to-state]]
+            [html-sync.hidden-state :as hidden-state]))
 
 (def path (node/require "path"))
 (def node-atom (node/require "atom"))
@@ -31,6 +32,9 @@
     (swap! uri-to-state update uri #(assoc % :iframe iframe))
     container))
 
+
+;; TODO: The editor can't be moved between different Panels because it loses
+;;       the iframe content. Do we need to provide serialize?
 (defn HTMLEditor [uri]
   (this-as this
            (let [original-uri (subs uri (count common/protocol))]

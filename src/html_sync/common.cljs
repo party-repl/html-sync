@@ -2,6 +2,10 @@
   (:require [clojure.string :as string]
             [cljs.nodejs :as node]))
 
+(def node-atom (node/require "atom"))
+(def CompositeDisposable (.-CompositeDisposable node-atom))
+
+(def disposables (CompositeDisposable.))
 (def uri-to-state (atom {}))
 
 (def package-name "html-sync")

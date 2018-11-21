@@ -10,9 +10,14 @@
 
 (def package-name "html-sync")
 (def protocol (str package-name "://"))
+(def hidden-editor-title "HTMLSync hidden editor")
 
 (defn console-log
   "Used for development. The output can be viewed in the Atom's Console when in
   Dev Mode."
   [& output]
   (apply (.-log js/console) output))
+
+(defn show-error [& error]
+  (apply (.-error js/console) error)
+  (.addError (.-notifications js/atom) (apply str error)))

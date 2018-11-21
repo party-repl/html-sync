@@ -3,7 +3,8 @@
             [cljs.nodejs :as node]
             [html-sync.common :as common :refer [uri-to-state disposables]]
             [html-sync.html-editor :as html-editor]
-            [html-sync.hidden-state :as hidden-state]))
+            [html-sync.hidden-state :as hidden-state]
+            [html-sync.guest :as guest]))
 
 (def path (node/require "path"))
 (def node-atom (node/require "atom"))
@@ -25,34 +26,66 @@
   (.. iframe -contentWindow -document (write new-content))
   (.. iframe -contentWindow -document (close)))
 
-(defn observe-editor [pane-item]
-  (common/console-log "Checking URI:" pane-item)
-  (when-let [buffer (.-getBuffer pane-item)]
+(defn ^:private html-editor? [pane-item]
+  (when-let [buffer (and pane-item (.-getBuffer pane-item))]
     (let [item-path (.getPath pane-item)]
-      (when (= html-extension (.toLowerCase (.extname path item-path)))
-        (common/console-log "Openning:" item-path)
-        (swap! common/uri-to-state assoc item-path {:editor pane-item
-                                                    :buffer buffer})
-        (-> (.-workspace js/atom)
-            (.open (str common/protocol item-path))
-            (.then (fn [html-editor]
-                     (let [{:keys [iframe editor]} (get @uri-to-state item-path)
-                           iframe-content (.getText editor)]
-                        (update-iframe-content iframe iframe-content)
-                        (.add (.-subscriptions html-editor)
-                              (.onDidChange (.getBuffer editor)
-                                            (fn [change]
-                                              (common/console-log "Changed content!" change)
-                                              (update-iframe-content iframe (.getText editor)))))))))))))
+      (when (string? item-path)
+            (= html-extension (.toLowerCase (.extname path item-path)))))))
+
+(defn open-editor [pane-item]
+  (common/console-log "Checking URI:" pane-item)
+  (when (html-editor? pane-item)
+    (let [item-path (.getPath pane-item)
+          buffer (.-getBuffer pane-item)]
+      (common/console-log "Openning:" item-path)
+      (swap! common/uri-to-state assoc item-path {:editor pane-item
+                                                  :buffer buffer})
+      (-> (.-workspace js/atom)
+          (.open (str common/protocol item-path))
+          (.then (fn [html-editor]
+                   (let [{:keys [iframe editor]} (get @uri-to-state item-path)
+                         iframe-content (.getText editor)]
+                      (update-iframe-content iframe iframe-content)
+                      (.add (.-subscriptions html-editor)
+                            (.onDidChange (.getBuffer editor)
+                                          (fn [change]
+                                            (common/console-log "Changed content!" change)
+                                            (update-iframe-content iframe (.getText editor))))))))))))
+
+(defn add-buttons [editor buttons]
+  (common/console-log "Adding action buttons:" buttons)
+  (let [editor-element (.-element editor)
+        button-container (doto (.createElement js/document "div")
+                               (.setAttribute "class" "button-container"))]
+    (.add (.-classList editor-element) "html-sync")
+    (doseq [[title callback] buttons]
+      (let [button (doto (.createElement js/document "button")
+                         (.setAttribute "class" title))]
+        (set! (.-innerText button) title)
+        (.appendChild button-container button)
+        (.addEventListener button "click" (partial callback editor))))
+    (.appendChild editor-element button-container)))
+
+(defn ^:private has-buttons? [editor]
+  (let [editor-element (.-element editor)]
+    (.contains (.-classList editor-element) "html-sync")))
+
+(defn observe-editor [editor]
+  (when (and (html-editor? editor)
+             (not (has-buttons? editor)))
+    (add-buttons editor {"sync" hidden-state/sync-hidden-editor
+                         "show" (partial open-editor editor)})))
 
 (defn open []
-  (observe-editor (.getActiveTextEditor (.-workspace js/atom))))
+  (open-editor (.getActiveTextEditor (.-workspace js/atom))))
 
 (defn activate []
   (common/console-log "Activating HTML Sync!")
   (hidden-state/create-hidden-state)
   (.add disposables (.addOpener (.-workspace js/atom) open-URI))
-  (.add disposables (.add commands "atom-workspace" (str common/package-name ":open") open)))
+  (.add disposables (.add commands "atom-workspace" (str common/package-name ":open") open))
+  (.add disposables (.observeActiveTextEditor (.-workspace js/atom) observe-editor))
+  (guest/look-for-teletyped-hidden-editor))
 
 (defn deactivate []
   (hidden-state/destroy-hidden-pane)

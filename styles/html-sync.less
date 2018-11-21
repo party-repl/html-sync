@@ -6,6 +6,10 @@
  */
 @import "ui-variables";
 
+atom-text-editor.html-sync {
+    padding-top: 28px;
+}
+
 .html-sync.html-editor-view {
     position: absolute;
     top: 0px;
@@ -16,6 +20,29 @@
 
 .html-sync.html-editor-view iframe {
     pointer-events: none;
+}
+
+.html-sync .button-container {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    height: 28px;
+    width: 100%;
+    padding: 2px 0px;
+    background-color: rgb(50, 50, 50);
+}
+
+.html-sync .button-container button {
+    float: right;
+    color: grey;
+    height: 24px;
+    margin-right: 10px;
+}
+
+.html-sync .button-container button.sync {
+    float: left;
+    margin-left: 10px;
+    margin-right: 0px;
 }
 
 #hidden-resize-handle {

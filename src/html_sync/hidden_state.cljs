@@ -11,13 +11,13 @@
 
 (def resize-handle-tag-name "ATOM-PANE-RESIZE-HANDLE")
 
-(def hidden-state (atom {:change-count [0]
+(def hidden-state (atom {:snapshot-index [-1]
                          :snapshots []}))
 
-(def hidden-state-callbacks {:change-count (fn [state old-value new-value])})
+(def hidden-state-callbacks {:snapshot-index (fn [state old-value new-value])})
 
-(def hidden-workspace (atom {:hidden-editor nil
-                             :hidden-pane nil}))
+(def hidden-workspace (atom {:hidden-pane nil
+                             :hidden-editor nil}))
 
 (def state-types (set (keys @hidden-state)))
 
@@ -98,23 +98,6 @@
         next-index (mod (inc current-index) (inc (.-length panes)))]
     (aget panes next-index)))
 
-(defn ^:private add-listeners
-  "This Pane should only contain our hidden buffers. When other editors
-  accidently get placed in here, we want to move them to the next available
-  Pane."
-  [hidden-pane]
-  (.add common/disposables
-        (.onDidAddItem hidden-pane
-                       (fn [event]
-                         (let [item (.-item event)]
-                           (when-not (= item (get @hidden-workspace :hidden-editor))
-                             (console-log "Moving item to the next pane!" item)
-                             (.moveItemToPane hidden-pane item (get-next-pane hidden-pane))))))))
-
-(defn ^:private open-in-hidden-pane [hidden-pane hidden-editor]
-  (.addItem hidden-pane hidden-editor (js-obj "moved" false))
-  (.setActiveItem hidden-pane hidden-editor))
-
 (defn ^:private join-state-types [text [state-type initial-value]]
   (if-not (vector? initial-value)
     (console-log "ERROR:" "Hidden state needs to have an array as the initial value." state-type initial-value)
@@ -132,6 +115,30 @@
   [editor]
   (when-let [pane (.paneForItem (.-workspace js/atom) editor)]
     (.destroyItem pane editor true)))
+
+(defn ^:private add-listeners
+  "This Pane should only contain our hidden buffers. When other editors
+  accidently get placed in here, we want to move them to the next available
+  Pane."
+  [hidden-pane]
+  (.add common/disposables
+        (.onDidAddItem hidden-pane
+                       (fn [event]
+                         (let [item (.-item event)]
+                           (when-not (= item (get @hidden-workspace :hidden-editor))
+                             (console-log "Moving item to the next pane!" item)
+                             (.moveItemToPane hidden-pane item (get-next-pane hidden-pane))))))))
+
+(defn ^:private open-in-hidden-pane [hidden-editor & {:keys [moved?]}]
+  (let [hidden-pane (get @hidden-workspace :hidden-pane)]
+    (if moved?
+      (let [current-pane (.paneForItem (.-workspace js/atom) hidden-editor)]
+        (.moveItemToPane current-pane hidden-editor hidden-pane)
+        (.activateItem hidden-pane hidden-editor)
+        (.activate hidden-pane))
+      (do
+        (.addItem hidden-pane hidden-editor (js-obj "moved" false))
+        (.setActiveItem hidden-pane hidden-editor)))))
 
 (defn ^:private create-hidden-editor []
   (let [editor (.buildTextEditor (.-workspace js/atom)
@@ -200,8 +207,25 @@
   ([] @hidden-state)
   ([state-name]
     (if-not (keyword? state-name)
-      (console-log "ERROR: Hidden state name needs to be a keyword." state-name)
+      (common/console-log "ERROR: Hidden state name needs to be a keyword." state-name)
       (get @hidden-state state-name))))
+
+(defn link-teletyped-hidden-editor [hidden-editor]
+  (let [original-hidden-editor (get @hidden-workspace :hidden-editor)]
+    (swap! hidden-workspace assoc :hidden-editor hidden-editor)
+    (open-in-hidden-pane hidden-editor :moved? true)
+    (.add common/disposables
+          (.onDidDestroy hidden-editor
+                         (fn []
+                           (swap! hidden-workspace assoc :hidden-editor original-hidden-editor))))))
+
+(defn sync-hidden-editor
+  "Focuses on the hidden editor in order to allow Teletype to share the editor."
+  []
+  (let [editor (get @hidden-workspace :hidden-editor)]
+    (when-let [pane (.paneForItem (.-workspace js/atom) editor)]
+    (.activateItem pane editor)
+    (.activate pane))))
 
 (defn destroy-hidden-pane
   "Destroys the Pane. If this is the last Pane, all the items inside it will be
@@ -237,6 +261,7 @@
   (let [hidden-pane (create-hidden-pane)
         hidden-editor (create-hidden-editor)]
     (swap! hidden-workspace assoc :hidden-editor hidden-editor)
-    (open-in-hidden-pane hidden-pane hidden-editor)
+    (.setPath (.getBuffer hidden-editor) (.resolvePath (.-project js/atom) common/hidden-editor-title))
+    (open-in-hidden-pane hidden-editor)
     (watch-hidden-editor hidden-editor)
     (.activate hidden-pane)))

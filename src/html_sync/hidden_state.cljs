@@ -11,10 +11,9 @@
 
 (def resize-handle-tag-name "ATOM-PANE-RESIZE-HANDLE")
 
-(def hidden-state (atom {:snapshot-index [-1]
-                         :snapshots []}))
+(def hidden-state (atom {:change-count [-1]}))
 
-(def hidden-state-callbacks {:snapshot-index (fn [state old-value new-value])})
+(def hidden-state-callbacks {:change-count (fn [state old-value new-value])})
 
 (def hidden-workspace (atom {:hidden-pane nil
                              :hidden-editor nil}))
@@ -218,6 +217,13 @@
           (.onDidDestroy hidden-editor
                          (fn []
                            (swap! hidden-workspace assoc :hidden-editor original-hidden-editor))))))
+
+(defn clean-up-hidden-editor []
+  (let [pane-items (.getPaneItems (.-workspace js/atom))]
+    (doseq [pane-item pane-items]
+      (when-let [title (.getTitle pane-item)]
+        (when (string/starts-with? title common/hidden-editor-title)
+          (close-editor pane-item))))))
 
 (defn sync-hidden-editor
   "Focuses on the hidden editor in order to allow Teletype to share the editor."

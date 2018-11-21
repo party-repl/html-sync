@@ -29,9 +29,8 @@
                      (.setAttribute "width" "100%")
                      (.setAttribute "height" "100%"))]
     (.appendChild container iframe)
-    (swap! uri-to-state update uri #(assoc % :iframe iframe))
+    (swap! uri-to-state update uri #(assoc % :iframe-element iframe))
     container))
-
 
 ;; TODO: The editor can't be moved between different Panels because it loses
 ;;       the iframe content. Do we need to provide serialize?

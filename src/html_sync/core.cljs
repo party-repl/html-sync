@@ -19,14 +19,14 @@
   (when (string/starts-with? uri-to-open common/protocol)
     (html-editor/HTMLEditor. uri-to-open)))
 
-(defn update-iframe-content [iframe new-content]
+(defn ^:private update-iframe-content [iframe new-content]
   (common/console-log "Applying IFrame content")
   (hidden-state/update-hidden-state :change-count (inc (get (hidden-state/get-hidden-state :change-count) 0)))
   (.. iframe -contentWindow -document (open))
   (.. iframe -contentWindow -document (write new-content))
   (.. iframe -contentWindow -document (close)))
 
-(defn ^:private html-editor? [pane-item]
+(defn ^:private html-text-editor? [pane-item]
   (when-let [buffer (and pane-item (.-getBuffer pane-item))]
     (let [item-path (.getPath pane-item)]
       (when (string? item-path)
@@ -34,7 +34,7 @@
 
 (defn open-editor [pane-item]
   (common/console-log "Checking URI:" pane-item)
-  (when (html-editor? pane-item)
+  (when (html-text-editor? pane-item)
     (let [item-path (.getPath pane-item)
           buffer (.-getBuffer pane-item)]
       (common/console-log "Openning:" item-path)
@@ -43,14 +43,23 @@
       (-> (.-workspace js/atom)
           (.open (str common/protocol item-path))
           (.then (fn [html-editor]
-                   (let [{:keys [iframe editor]} (get @uri-to-state item-path)
-                         iframe-content (.getText editor)]
-                      (update-iframe-content iframe iframe-content)
+                   (let [{:keys [iframe-element editor]} (get @uri-to-state item-path)]
+                      (update-iframe-content iframe-element (.getText editor))
+                      (.add (.-subscriptions html-editor)
+                            (.observePanes (.-workspace js/atom)
+                                           (fn [pane]
+                                             (.add (.-subscriptions html-editor)
+                                                   (.onDidAddItem pane
+                                                                  (fn [event]
+                                                                    (common/console-log "New Item Added!" event)
+                                                                    (when (= html-editor (.-item event))
+                                                                      (.activateItem pane (.-item event))
+                                                                      (update-iframe-content iframe-element (.getText editor)))))))))
                       (.add (.-subscriptions html-editor)
                             (.onDidChange (.getBuffer editor)
                                           (fn [change]
                                             (common/console-log "Changed content!" change)
-                                            (update-iframe-content iframe (.getText editor))))))))))))
+                                            (update-iframe-content iframe-element (.getText editor))))))))))))
 
 (defn add-buttons [editor buttons]
   (common/console-log "Adding action buttons:" buttons)
@@ -71,7 +80,7 @@
     (.contains (.-classList editor-element) "html-sync")))
 
 (defn observe-editor [editor]
-  (when (and (html-editor? editor)
+  (when (and (html-text-editor? editor)
              (not (has-buttons? editor)))
     (add-buttons editor {"sync" hidden-state/sync-hidden-editor
                          "show" (partial open-editor editor)})))
@@ -81,6 +90,7 @@
 
 (defn activate []
   (common/console-log "Activating HTML Sync!")
+  (hidden-state/clean-up-hidden-editor)
   (hidden-state/create-hidden-state)
   (.add disposables (.addOpener (.-workspace js/atom) open-URI))
   (.add disposables (.add commands "atom-workspace" (str common/package-name ":open") open))

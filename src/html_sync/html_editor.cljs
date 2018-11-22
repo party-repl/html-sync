@@ -32,8 +32,6 @@
     (swap! uri-to-state update uri #(assoc % :iframe-element iframe))
     container))
 
-;; TODO: The editor can't be moved between different Panels because it loses
-;;       the iframe content. Do we need to provide serialize?
 (defn HTMLEditor [uri]
   (this-as this
            (let [original-uri (subs uri (count common/protocol))]

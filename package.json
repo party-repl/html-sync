@@ -2,7 +2,7 @@
   "name": "html-sync",
   "main": "./lib/html-sync",
   "version": "1.1.0",
-  "description": "Edit HTML on browser with Teletype support",
+  "description": "Show HTML file in an iframe while editting the HTML file using Teletype.",
   "keywords": [],
   "repository": "",
   "license": "Eclipse Public License",

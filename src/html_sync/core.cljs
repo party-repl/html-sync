@@ -83,7 +83,7 @@
     (.add (.-classList editor-element) "html-sync")
     (doseq [[title callback] buttons]
       (let [button (doto (.createElement js/document "button")
-                         (.setAttribute "class" title))]
+                         (.setAttribute "class" (str "btn " title)))]
         (set! (.-innerText button) title)
         (.appendChild button-container button)
         (.addEventListener button "click" (partial callback editor))))
@@ -113,7 +113,7 @@
 
 (defn activate []
   (common/console-log "Activating HTML Sync!")
-  (hidden-state/clean-up-hidden-editor)
+  ;(hidden-state/clean-up-hidden-editor)
   (hidden-state/create-hidden-state)
   (.add disposables (.addOpener (.-workspace js/atom) html-editor-opener))
   (.add disposables (.add commands "atom-workspace" (str common/package-name ":open") open))

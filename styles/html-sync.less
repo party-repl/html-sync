@@ -7,7 +7,7 @@
 @import "ui-variables";
 
 atom-text-editor.html-sync {
-    padding-top: 28px;
+    padding-top: 30px;
 }
 
 .html-sync.html-editor-view {
@@ -26,17 +26,20 @@ atom-text-editor.html-sync {
     position: absolute;
     top: 0px;
     left: 0px;
-    height: 28px;
+    height: 30px;
     width: 100%;
-    padding: 2px 0px;
-    background-color: rgb(50, 50, 50);
+    background-color: transparent;
 }
 
 .html-sync .button-container button {
     float: right;
-    color: grey;
-    height: 24px;
     margin-right: 10px;
+}
+
+.html-sync .button-container button:focus {
+    border-color: #111314;
+    outline: 2px auto #111314;
+    box-shadow: none;
 }
 
 .html-sync .button-container button.sync {

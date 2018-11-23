@@ -2,9 +2,9 @@
   "name": "html-sync",
   "main": "./lib/html-sync",
   "version": "1.1.0",
-  "description": "Show HTML file in an iframe while editting the HTML file using Teletype.",
+  "description": "Visualizes HTML files right inside Atom Editor.",
   "keywords": [],
-  "repository": "",
+  "repository": "https://github.com/party-repl/html-sync.git",
   "license": "Eclipse Public License",
   "engines": {
     "atom": ">=1.0.0 <2.0.0"
